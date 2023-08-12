@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 include(default_build_type)
 
-SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_STANDARD 17)
 
 add_library(ips4o INTERFACE)
 target_include_directories(ips4o INTERFACE include/)
@@ -43,8 +43,9 @@ if (NOT IPS4O_DISABLE_PARALLEL)
   find_package (Threads REQUIRED)
   target_link_libraries(ips4o INTERFACE Threads::Threads)
 
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/extern/cmake-modules)
+  # list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/extern/cmake-modules)
   find_package(TBB REQUIRED)
+  message(STATUS "Found TBB ${TBB_FOUND}")
   target_link_libraries(ips4o INTERFACE TBB::tbb)
 
   target_link_libraries(ips4o INTERFACE atomic)
@@ -52,7 +53,7 @@ if (NOT IPS4O_DISABLE_PARALLEL)
 endif()
 message(STATUS "Parallel support of IPS4o disabled: ${IPS4O_DISABLE_PARALLEL}")
 
-option(IPS4O_USE_OPENMP "Enable OpenMP threads" OFF)
+option(IPS4O_USE_OPENMP "Enable OpenMP threads" ON)
 if (IPS4O_USE_OPENMP)
   if (NOT IPS4O_DISABLE_PARALLEL)
     find_package(OpenMP)
