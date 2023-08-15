@@ -74,6 +74,7 @@ void insertionSort(const It begin, const It end, Comp comp) {
  */
 template <class It, class Comp>
 inline void baseCaseSort(It begin, It end, Comp&& comp) {
+    // return;
     if (begin == end) return;
     detail::insertionSort(std::move(begin), std::move(end), std::forward<Comp>(comp));
 }

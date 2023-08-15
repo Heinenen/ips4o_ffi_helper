@@ -38,6 +38,7 @@
 #include <atomic>
 #include <tuple>
 #include <utility>
+#include <iostream> 
 
 #include "ips4o_fwd.hpp"
 #include "block_permutation.hpp"
@@ -46,9 +47,21 @@
 #include "memory.hpp"
 #include "sampling.hpp"
 #include "utils.hpp"
+extern int64_t timingz[10];
 
 namespace ips4o {
 namespace detail {
+
+
+template <
+    class result_t   = std::chrono::nanoseconds,
+    class clock_t    = std::chrono::steady_clock,
+    class duration_t = std::chrono::nanoseconds
+>
+auto since(std::chrono::time_point<clock_t, duration_t> const& start)
+{
+    return std::chrono::duration_cast<result_t>(clock_t::now() - start);
+}
 
 /**
  * Main partitioning function.
@@ -63,6 +76,7 @@ std::pair<int, bool> Sorter<Cfg>::partition(const iterator begin, const iterator
     g_sampling.start();
 #endif
 
+    auto n_build = std::chrono::high_resolution_clock::now();
     // Sampling
     bool use_equal_buckets = false;
     {
@@ -93,6 +107,9 @@ std::pair<int, bool> Sorter<Cfg>::partition(const iterator begin, const iterator
     this->my_id_ = my_id;
     this->num_threads_ = num_threads;
 
+    auto e_build = since(n_build).count();
+    auto n_classify = std::chrono::high_resolution_clock::now();
+
 #ifdef IPS4O_TIMER
     g_sampling.stop();
     g_classification.start();
@@ -103,6 +120,9 @@ std::pair<int, bool> Sorter<Cfg>::partition(const iterator begin, const iterator
         parallelClassification(use_equal_buckets);
     else
         sequentialClassification(use_equal_buckets);
+
+    auto e_classify = since(n_classify).count();
+    auto n_permute = std::chrono::high_resolution_clock::now();
 
 #ifdef IPS4O_TIMER
     g_classification.stop(end - begin, "class");
@@ -123,6 +143,8 @@ std::pair<int, bool> Sorter<Cfg>::partition(const iterator begin, const iterator
 
     if (kIsParallel) shared_->sync.barrier();
 
+    auto e_permute = since(n_permute).count();
+    auto n_cleanup = std::chrono::high_resolution_clock::now();
 #ifdef IPS4O_TIMER
     g_permutation.stop(end - begin, "perm");
     g_cleanup.start();
@@ -153,6 +175,14 @@ std::pair<int, bool> Sorter<Cfg>::partition(const iterator begin, const iterator
 
     if (kIsParallel) shared_->sync.barrier();
     local_.reset();
+
+
+    auto e_cleanup = since(n_cleanup).count();
+    timingz[1] += e_build;
+    timingz[2] += e_classify;
+    timingz[3] += e_permute;
+    timingz[4] += e_cleanup;
+
 
 #ifdef IPS4O_TIMER
     g_cleanup.stop();

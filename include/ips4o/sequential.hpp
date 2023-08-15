@@ -36,12 +36,16 @@
 #pragma once
 
 #include <utility>
+#include <iostream>
 
 #include "ips4o_fwd.hpp"
 #include "base_case.hpp"
 #include "memory.hpp"
 #include "partitioning.hpp"
 #include "scheduler.hpp"
+
+
+int64_t timingz[10] = { 0 };
 
 namespace ips4o {
 namespace detail {

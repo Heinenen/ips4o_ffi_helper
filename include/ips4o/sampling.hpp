@@ -38,6 +38,7 @@
 #include <iterator>
 #include <random>
 #include <utility>
+// #include <chrono>
 
 #include "ips4o_fwd.hpp"
 #include "classifier.hpp"
@@ -65,6 +66,15 @@ void selectSample(It begin, const It end,
     }
 }
 
+// template <
+//     class result_t   = std::chrono::milliseconds,
+//     class clock_t    = std::chrono::steady_clock,
+//     class duration_t = std::chrono::milliseconds
+// >
+// auto since(std::chrono::time_point<clock_t, duration_t> const& start)
+// {
+//     return std::chrono::duration_cast<result_t>(clock_t::now() - start);
+// }
 /**
  * Builds the classifer.
  * Number of used_buckets is a power of two and at least two.
@@ -73,17 +83,22 @@ template <class Cfg>
 std::pair<int, bool> Sorter<Cfg>::buildClassifier(const iterator begin,
                                                   const iterator end,
                                                   Classifier& classifier) {
+    // auto start = std::chrono::high_resolution_clock::now();
+    // std::clock_t start, finish;
+    // start = clock();
     const auto n = end - begin;
     int log_buckets = Cfg::logBuckets(n);
     int num_buckets = 1 << log_buckets;
     const auto step = std::max<diff_t>(1, Cfg::oversamplingFactor(n));
     const auto num_samples = std::min(step * num_buckets - 1, n / 2);
+    // std::cout << end - begin << "," << num_buckets << "," << step << "," << num_samples << "\n";
 
     // Select the sample
     detail::selectSample(begin, end, num_samples, local_.random_generator);
 
     // Sort the sample
-    sequential(begin, begin + num_samples);
+    insertionSort(begin, begin + num_samples, classifier.getComparator());
+    // sequential(begin, begin + num_samples);
     auto splitter = begin + step - 1;
     auto sorted_splitters = classifier.getSortedSplitters();
     const auto comp = classifier.getComparator();
@@ -113,11 +128,19 @@ std::pair<int, bool> Sorter<Cfg>::buildClassifier(const iterator begin,
         new (++sorted_splitters) typename Cfg::value_type(*splitter);
     }
 
+    // finish = clock();
+    // double time_taken = double(finish - start) / (double(CLOCKS_PER_SEC) / 1000000);
+    // auto elapsed = since(start).count();
+    // clock.tock();
+    // std::cout << elapsed << "ns\n";
+    // std::cout << time_taken << "us\n";
+
     // Build the tree
     classifier.build(log_buckets);
     this->classifier_ = &classifier;
 
     const int used_buckets = num_buckets * (1 + use_equal_buckets);
+    // std::cout << used_buckets << std::endl;
     return {used_buckets, use_equal_buckets};
 }
 

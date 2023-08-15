@@ -48,6 +48,19 @@
 
 namespace ips4o {
 
+
+
+    template <
+        class result_t   = std::chrono::nanoseconds,
+        class clock_t    = std::chrono::steady_clock,
+        class duration_t = std::chrono::nanoseconds
+    >
+    auto since(std::chrono::time_point<clock_t, duration_t> const& start)
+    {
+        return std::chrono::duration_cast<result_t>(clock_t::now() - start);
+    }
+
+
 /**
  * Helper function for creating a reusable sequential sorter.
  */
@@ -66,6 +79,7 @@ void sort(It begin, It end, Comp comp = Comp()) {
     g_total.start();
     g_overhead.start();
 #endif
+        auto now = std::chrono::high_resolution_clock::now();
 
     if (detail::sortSimpleCases(begin, end, comp)) {
 #ifdef IPS4O_TIMER
@@ -93,6 +107,14 @@ void sort(It begin, It end, Comp comp = Comp()) {
                 false, std::move(comp)};
         sorter(std::move(begin), std::move(end));
     }
+
+
+
+        auto elapsed = since(now).count();
+        timingz[0] = elapsed;
+        for (int i = 0; i < 10; i++) {
+            std::cout << timingz[i] << "\n";
+        }
 
 #ifdef IPS4O_TIMER
     g_overhead.stop();
